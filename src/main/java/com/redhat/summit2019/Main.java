@@ -2,7 +2,6 @@ package com.redhat.summit2019;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
 import okhttp3.Credentials;
 import okhttp3.Headers;
 import okhttp3.MediaType;
