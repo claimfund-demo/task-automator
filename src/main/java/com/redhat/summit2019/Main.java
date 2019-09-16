@@ -19,15 +19,20 @@ import java.util.concurrent.ThreadLocalRandom;
 public class Main {
 
     private static final OkHttpClient http = new OkHttpClient();
+    private static final String BASE_URL = System.getenv().getOrDefault("PAM_BASE_URL", "http://127.0.0.1:8080/kie-server/services/rest/server");
+    private static final String CONTAINER_ID = System.getenv().getOrDefault("PAM_CONTAINER_ID", "kafka-jbpm-process_1.0.18-SNAPSHOT");
+    private static final String PAGE_SIZE = System.getenv().getOrDefault("BATCH_SIZE", "20");
+    private static final String USERNAME = System.getenv().getOrDefault("JBPM_USERNAME", "wbadmin");
+    private static final String PASSWORD = System.getenv().getOrDefault("JBPM_PASSWORD", "wbadmin");
+    private static final int SLEEP = Integer.parseInt(System.getenv().getOrDefault("RESPONSE_WAIT", "5000"));
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        String baseURL = "http://192.168.0.23:8080/kie-server/services/rest/server";
-        String containerId = "kafka-jbpm-process_1.0.23-SNAPSHOT";
         Headers authHeader = new Headers.Builder()
-                .add("Authorization", Credentials.basic("wbadmin", "wbadmin"))
+                .add("Authorization", Credentials.basic(USERNAME, PASSWORD))
                 .build();
 
-        URL url = new URL(baseURL + "/queries/tasks/instances/pot-owners?status=Ready&page=0&pageSize=10&sortOrder=true");
+        URL url = new URL(BASE_URL + "/queries/tasks/instances/pot-owners?status=Ready&page=0&pageSize=" + PAGE_SIZE
+                + "&sortOrder=true");
 
         Request request = new Request.Builder()
                 .url(url)
@@ -61,11 +66,11 @@ public class Main {
             System.exit(-1);
         }
 
-        Thread.sleep(5000);
+        Thread.sleep(SLEEP);
 
         System.out.println("Claiming tasks...");
         for (int taskId : taskIdList) {
-            url = new URL(baseURL + "/containers/" + containerId + "/tasks/" + taskId + "/states/claimed");
+            url = new URL(BASE_URL + "/containers/" + CONTAINER_ID + "/tasks/" + taskId + "/states/claimed");
             request = new Request.Builder()
                     .url(url)
                     .headers(authHeader)
@@ -73,15 +78,19 @@ public class Main {
                     .build();
             response = http.newCall(request).execute();
             if (response.code() != 201) {
-                System.out.println(response.body().string());
+                if (response.body() != null) {
+                    System.out.println(response.body().string());
+                } else {
+                    System.out.println("Body is null");
+                }
             }
         }
 
-        Thread.sleep(5000);
+        Thread.sleep(SLEEP);
 
         System.out.println("Starting tasks...");
         for (int taskId : taskIdList) {
-            url = new URL(baseURL + "/containers/" + containerId + "/tasks/" + taskId + "/states/started");
+            url = new URL(BASE_URL + "/containers/" + CONTAINER_ID + "/tasks/" + taskId + "/states/started");
             request = new Request.Builder()
                     .url(url)
                     .headers(authHeader)
@@ -89,18 +98,22 @@ public class Main {
                     .build();
             response = http.newCall(request).execute();
             if (response.code() != 201) {
-                System.out.println(response.body().string());
+                if (response.body() != null) {
+                    System.out.println(response.body().string());
+                } else {
+                    System.out.println("Body is null");
+                }
             }
         }
 
-        Thread.sleep(5000);
+        Thread.sleep(SLEEP);
 
         System.out.println("Completing tasks...");
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for (int taskId : taskIdList) {
             boolean approved = random.nextBoolean();
             String content = "{\"isApproved\": " + approved + "}";
-            url = new URL(baseURL + "/containers/" + containerId + "/tasks/" + taskId + "/states/completed");
+            url = new URL(BASE_URL + "/containers/" + CONTAINER_ID + "/tasks/" + taskId + "/states/completed");
             request = new Request.Builder()
                     .url(url)
                     .headers(authHeader)
@@ -108,7 +121,11 @@ public class Main {
                     .build();
             response = http.newCall(request).execute();
             if (response.code() != 201) {
-                System.out.println(response.body().string());
+                if (response.body() != null) {
+                    System.out.println(response.body().string());
+                } else {
+                    System.out.println("Body is null");
+                }
             }
         }
     }
